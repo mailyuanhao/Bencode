@@ -1,5 +1,10 @@
 package mybencode
 
+import (
+	"bytes"
+	"strconv"
+)
+
 type ValueType int
 
 const (
@@ -223,4 +228,55 @@ func decodeInt(b []byte) (int64, int, error) {
 		}
 	}
 	return 0, 0, parseError{"unexpected value "}
+}
+
+type BencodeBuff interface {
+	GetEncoded() []byte
+}
+
+type bencodeBuff struct {
+	buffer []byte
+}
+
+func (b *bencodeBuff) GetEncoded() []byte {
+	return b.buffer
+}
+
+func NewBencodedBuff() BencodeBuff {
+	var b bencodeBuff
+	b.buffer = make([]byte, 0)
+	return &b
+}
+
+func StartMap(b BencodeBuff) error {
+	v := b.(*bencodeBuff)
+	v.buffer = append(v.buffer, byte('d'))
+	return nil
+}
+
+func EndMap(b BencodeBuff) error {
+	v := b.(*bencodeBuff)
+	v.buffer = append(v.buffer, byte('e'))
+	return nil
+}
+
+func StartList(b BencodeBuff) error {
+	v := b.(*bencodeBuff)
+	v.buffer = append(v.buffer, byte('l'))
+	return nil
+}
+
+func EndList(b BencodeBuff) error {
+	v := b.(*bencodeBuff)
+	v.buffer = append(v.buffer, byte('e'))
+	return nil
+}
+
+func ValueString(b BencodeBuff, s string) error {
+	l := bytes.Count([]byte(s), nil) - 1
+	strl := []byte(strconv.Itoa(l))
+	strl = strl[:bytes.Count(strl, nil)-1]
+	v := b.(*bencodeBuff)
+	v.buffer = append(v.buffer, byte('e'))
+	return nil
 }

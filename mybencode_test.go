@@ -1,6 +1,7 @@
 package mybencode
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -108,5 +109,68 @@ func TestAny(t *testing.T) {
 	var e Any = c
 	if e.GetType() != ListValue {
 		t.Error()
+	}
+}
+
+func TestStartDic(test *testing.T) {
+	var w = NewWrier()
+	w.StartDic()
+	w.AppendString("123")
+	w.AppendInt64(32)
+	w.EndDic()
+	if !reflect.DeepEqual(w.GetBytes(), []byte("d3:123i32ee")) {
+		test.Error()
+	}
+}
+
+func TestStartList(test *testing.T) {
+	var w = NewWrier()
+	w.StartList()
+	w.AppendString("abc")
+	w.AppendInt64(32)
+	w.AppendString("cdf")
+	w.EndList()
+	if !reflect.DeepEqual(w.GetBytes(), []byte("l3:abci32e3:cdfe")) {
+		test.Error()
+	}
+}
+
+func TestAppendString(test *testing.T) {
+	tables := []struct {
+		s string
+		b []byte
+	}{
+		{"123", []byte("3:123")},
+		{"abcdefg", []byte("7:abcdefg")},
+		{"1", []byte("1:1")},
+		{"-23", []byte("3:-23")},
+	}
+
+	for _, t := range tables {
+		var w = NewWrier()
+		w.AppendString(t.s)
+		if !reflect.DeepEqual(w.GetBytes(), t.b) {
+			test.Error()
+		}
+	}
+}
+
+func TestAppendInt64(t *testing.T) {
+	tables := []struct {
+		i int64
+		b []byte
+	}{
+		{32, []byte("i32e")},
+		{0, []byte("i0e")},
+		{1234567890, []byte("i1234567890e")},
+		{-1234567890, []byte("i-1234567890e")},
+	}
+
+	for _, i := range tables {
+		var w = NewWrier()
+		w.AppendInt64(i.i)
+		if !reflect.DeepEqual(w.GetBytes(), i.b) {
+			t.Error()
+		}
 	}
 }

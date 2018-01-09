@@ -1,5 +1,9 @@
 package mybencode
 
+import (
+	"strconv"
+)
+
 type ValueType int
 
 const (
@@ -15,6 +19,60 @@ type Any interface {
 	ToString() string
 	ToList() []Any
 	ToMap() map[string]Any
+}
+
+type Writer interface {
+	StartDic()
+	EndDic()
+	StartList()
+	EndList()
+	AppendInt64(int64)
+	AppendString(string)
+	GetBytes() []byte
+}
+
+func NewWrier() Writer {
+	var w writer
+	w.buf = make([]byte, 0)
+	return &w
+}
+
+type writer struct {
+	buf []byte
+}
+
+func (w *writer) GetBytes() []byte {
+	return w.buf
+}
+func (w *writer) StartDic() {
+	w.buf = append(w.buf, byte('d'))
+}
+
+func (w *writer) EndDic() {
+	w.buf = append(w.buf, byte('e'))
+}
+
+func (w *writer) StartList() {
+	w.buf = append(w.buf, byte('l'))
+}
+
+func (w *writer) EndList() {
+	w.buf = append(w.buf, byte('e'))
+}
+
+func (w *writer) AppendInt64(i int64) {
+	s := strconv.FormatInt(i, 10)
+	w.buf = append(w.buf, byte('i'))
+	w.buf = append(w.buf, s...)
+	w.buf = append(w.buf, byte('e'))
+}
+
+func (w *writer) AppendString(s string) {
+	strLen := len(s)
+	byteStrLen := []byte(strconv.Itoa(strLen))
+	w.buf = append(w.buf, byteStrLen...)
+	w.buf = append(w.buf, byte(':'))
+	w.buf = append(w.buf, []byte(s)...)
 }
 
 type wrapInt struct {

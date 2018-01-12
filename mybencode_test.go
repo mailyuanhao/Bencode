@@ -174,3 +174,16 @@ func TestAppendInt64(t *testing.T) {
 		}
 	}
 }
+
+func TestHandler(t *testing.T) {
+	a, l, _ := decodeMap([]byte("d2:abi32ee"))
+	k, ok := a["ab"]
+	if !ok || k.GetType() != IntValue || k.ToInt() != 32 || l != 10 {
+		t.Error()
+	}
+
+	h := NewHandler(wrapMap{a})
+	if v, _ := h.getByKey("ab").toInt(); v != 32 {
+		t.Error()
+	}
+}

@@ -1,6 +1,7 @@
 package mybencode
 
 import (
+	"io/ioutil"
 	"reflect"
 	"testing"
 )
@@ -175,6 +176,24 @@ func TestAppendInt64(t *testing.T) {
 	}
 }
 
+func TestTorrent(t *testing.T) {
+	data, err := ioutil.ReadFile("ubuntu-16.04.3-desktop-amd64.iso.torrent")
+	if err != nil {
+		t.Errorf("FILE READ ERROR %s", err.Error())
+	}
+
+	a, _, _ := decodeMap(data)
+
+	h := NewHandler(wrapMap{a})
+	if _, e := h.getByPos(0).toInt(); e == nil {
+		t.Error()
+	}
+
+	if v, _ := h.getByKey("announce").toString(); v != "http://torrent.ubuntu.com:6969/announce" {
+		t.Errorf("announce not valid %s", v)
+	}
+}
+
 func TestHandler(t *testing.T) {
 	a, l, _ := decodeMap([]byte("d2:abi32ee"))
 	k, ok := a["ab"]
@@ -184,6 +203,10 @@ func TestHandler(t *testing.T) {
 
 	h := NewHandler(wrapMap{a})
 	if v, _ := h.getByKey("ab").toInt(); v != 32 {
+		t.Error()
+	}
+
+	if _, e := h.getByPos(0).toInt(); e == nil {
 		t.Error()
 	}
 }

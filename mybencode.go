@@ -9,6 +9,8 @@ type Handler interface {
 	GetByKey(string) Handler
 	ToInt64() (int64, error)
 	ToString() (string, error)
+	ToList() ([]Any, error)
+	ToMap() (map[string]Any, error)
 }
 
 type handler struct {
@@ -16,8 +18,33 @@ type handler struct {
 	err error
 }
 
+//NewHandler make new Handler
 func NewHandler(a Any) Handler {
 	return handler{a, nil}
+}
+
+func (h handler) ToList() ([]Any, error) {
+	if h.any == nil {
+		return nil, &bencodeError{"Any is nil"}
+	}
+
+	if h.any.GetType() != ListValue {
+		return nil, &bencodeError{"Any is not list"}
+	}
+
+	return h.any.ToList(), nil
+}
+
+func (h handler) ToMap() (map[string]Any, error) {
+	if h.any == nil {
+		return nil, &bencodeError{"Any is nil"}
+	}
+
+	if h.any.GetType() != MapValue {
+		return nil, &bencodeError{"Any is not map"}
+	}
+
+	return h.any.ToMap(), nil
 }
 
 func (h handler) GetByPos(pos int) Handler {
@@ -26,12 +53,12 @@ func (h handler) GetByPos(pos int) Handler {
 	}
 
 	if h.any.GetType() != ListValue {
-		return handler{nil, bencodeError{"Any is not list"}}
+		return handler{nil, &bencodeError{"Any is not list"}}
 	}
 
 	list := h.any.ToList()
 	if len(list) <= pos || pos < 0 {
-		return handler{nil, bencodeError{"pos out of range"}}
+		return handler{nil, &bencodeError{"pos out of range"}}
 	}
 
 	return handler{list[pos], nil}
@@ -43,7 +70,7 @@ func (h handler) GetByKey(key string) Handler {
 	}
 
 	if h.any.GetType() != MapValue {
-		return handler{nil, bencodeError{"Any is not list"}}
+		return handler{nil, &bencodeError{"Any is not list"}}
 	}
 
 	dic := h.any.ToMap()
@@ -51,7 +78,7 @@ func (h handler) GetByKey(key string) Handler {
 		return handler{v, nil}
 	}
 
-	return handler{nil, bencodeError{"key not found"}}
+	return handler{nil, &bencodeError{"key not found"}}
 }
 
 func (h handler) ToInt64() (int64, error) {
@@ -60,7 +87,7 @@ func (h handler) ToInt64() (int64, error) {
 	}
 
 	if h.any.GetType() != IntValue {
-		return 0, bencodeError{"Any is not int"}
+		return 0, &bencodeError{"Any is not int"}
 	}
 
 	return h.any.ToInt(), nil
@@ -72,7 +99,7 @@ func (h handler) ToString() (string, error) {
 	}
 
 	if h.any.GetType() != StringValue {
-		return "", bencodeError{"Any is not string"}
+		return "", &bencodeError{"Any is not string"}
 	}
 
 	return h.any.ToString(), nil
@@ -249,7 +276,7 @@ type bencodeError struct {
 	info string
 }
 
-func (p bencodeError) Error() string {
+func (p *bencodeError) Error() string {
 	return p.info
 }
 
@@ -269,7 +296,7 @@ func DecodeItem(b []byte) (Any, int, error) {
 		return wrapString{s}, l, err
 	}
 
-	return nil, 0, bencodeError{""}
+	return nil, 0, &bencodeError{""}
 }
 
 func decodeList(b []byte) ([]Any, int, error) {
@@ -307,7 +334,7 @@ func decodeMap(b []byte) (map[string]Any, int, error) {
 
 func decodeString(b []byte) (string, int, error) {
 	if len(b) < 3 {
-		return "", 0, bencodeError{""}
+		return "", 0, &bencodeError{""}
 	}
 
 	var strLen int
@@ -321,12 +348,12 @@ func decodeString(b []byte) (string, int, error) {
 			strLen *= 10
 			strLen += int(v - byte('0'))
 		} else {
-			return "", 0, bencodeError{""}
+			return "", 0, &bencodeError{""}
 		}
 	}
 
 	if len(b) < 1+strLen {
-		return "", 0, bencodeError{""}
+		return "", 0, &bencodeError{""}
 	}
 
 	return string(b[1 : strLen+1]), strLen + numLen + 1, nil
@@ -334,7 +361,7 @@ func decodeString(b []byte) (string, int, error) {
 
 func decodeInt(b []byte) (int64, int, error) {
 	if len(b) < 3 {
-		return 0, 0, bencodeError{""}
+		return 0, 0, &bencodeError{""}
 	}
 	var value int64
 	b = b[1:]
@@ -354,5 +381,5 @@ func decodeInt(b []byte) (int64, int, error) {
 			break
 		}
 	}
-	return 0, 0, bencodeError{"unexpected value "}
+	return 0, 0, &bencodeError{"unexpected value "}
 }

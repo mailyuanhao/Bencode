@@ -9,6 +9,8 @@ type Handler interface {
 	GetByKey(string) Handler
 	ToInt64() (int64, error)
 	ToString() (string, error)
+	ToList() ([]Any, error)
+	ToMap() (map[string]Any, error)
 }
 
 type handler struct {
@@ -16,8 +18,33 @@ type handler struct {
 	err error
 }
 
+//NewHandler make new Handler
 func NewHandler(a Any) Handler {
 	return handler{a, nil}
+}
+
+func (h handler) ToList() ([]Any, error) {
+	if h.any == nil {
+		return nil, bencodeError{"Any is nil"}
+	}
+
+	if h.any.GetType() != ListValue {
+		return nil, bencodeError{"Any is not list"}
+	}
+
+	return h.any.ToList(), nil
+}
+
+func (h handler) ToMap() (map[string]Any, error) {
+	if h.any == nil {
+		return nil, bencodeError{"Any is nil"}
+	}
+
+	if h.any.GetType() != MapValue {
+		return nil, bencodeError{"Any is not map"}
+	}
+
+	return h.any.ToMap(), nil
 }
 
 func (h handler) GetByPos(pos int) Handler {

@@ -192,6 +192,19 @@ func TestTorrent(t *testing.T) {
 	if v, _ := h.getByKey("announce").toString(); v != "http://torrent.ubuntu.com:6969/announce" {
 		t.Errorf("announce not valid %s", v)
 	}
+
+	if v, _ := h.getByKey("announce-list").getByPos(0).getByPos(0).toString(); v != "http://torrent.ubuntu.com:6969/announce" {
+		t.Errorf("announce-list 0 not valid %s", v)
+	}
+
+	if v, _ := h.getByKey("announce-list").getByPos(1).getByPos(0).toString(); v != "http://ipv6.torrent.ubuntu.com:6969/announce" {
+		t.Errorf("announce-list 1 not valid %s", v)
+	}
+
+	if v, _ := h.getByKey("info").getByKey("name").toString(); v != "ubuntu-16.04.3-desktop-amd64.iso" {
+		t.Errorf("info->name not valid %s", v)
+	}
+
 }
 
 func TestHandler(t *testing.T) {

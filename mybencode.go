@@ -30,7 +30,7 @@ func (h handler) getByPos(pos int) Handler {
 	}
 
 	list := h.any.ToList()
-	if len(list) >= pos || pos < 0 {
+	if len(list) <= pos || pos < 0 {
 		return handler{nil, bencodeError{"pos out of range"}}
 	}
 

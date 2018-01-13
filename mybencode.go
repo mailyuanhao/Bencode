@@ -253,7 +253,7 @@ func (p bencodeError) Error() string {
 	return p.info
 }
 
-func decodeItem(b []byte) (Any, int, error) {
+func DecodeItem(b []byte) (Any, int, error) {
 	switch {
 	case b[0] == byte('i'):
 		i, l, err := decodeInt(b)
@@ -276,7 +276,7 @@ func decodeList(b []byte) ([]Any, int, error) {
 	listLen := 1
 	r := make([]Any, 0)
 	for listLen < len(b) && b[listLen] != byte('e') {
-		a, l, err := decodeItem(b[listLen:])
+		a, l, err := DecodeItem(b[listLen:])
 		if err != nil {
 			return nil, l, err
 		}
@@ -290,12 +290,12 @@ func decodeMap(b []byte) (map[string]Any, int, error) {
 	mapLen := 1
 	r := make(map[string]Any)
 	for mapLen < len(b) && b[mapLen] != byte('e') {
-		a, l, err := decodeItem(b[mapLen:])
+		a, l, err := DecodeItem(b[mapLen:])
 		if err != nil || a.GetType() != StringValue {
 			return nil, l, err
 		}
 		mapLen += l
-		v, l, err := decodeItem(b[mapLen:])
+		v, l, err := DecodeItem(b[mapLen:])
 		if err != nil {
 			return nil, l, err
 		}

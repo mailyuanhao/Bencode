@@ -1,4 +1,4 @@
-package mybencode
+package Bencode
 
 import (
 	"io/ioutil"
@@ -114,7 +114,7 @@ func TestAny(t *testing.T) {
 }
 
 func TestStartDic(test *testing.T) {
-	var w = NewWrier()
+	var w = NewWriter()
 	w.StartDic()
 	w.AppendString("123")
 	w.AppendInt64(32)
@@ -125,7 +125,7 @@ func TestStartDic(test *testing.T) {
 }
 
 func TestStartList(test *testing.T) {
-	var w = NewWrier()
+	var w = NewWriter()
 	w.StartList()
 	w.AppendString("abc")
 	w.AppendInt64(32)
@@ -148,7 +148,7 @@ func TestAppendString(test *testing.T) {
 	}
 
 	for _, t := range tables {
-		var w = NewWrier()
+		var w = NewWriter()
 		w.AppendString(t.s)
 		if !reflect.DeepEqual(w.GetBytes(), t.b) {
 			test.Error()
@@ -168,7 +168,7 @@ func TestAppendInt64(t *testing.T) {
 	}
 
 	for _, i := range tables {
-		var w = NewWrier()
+		var w = NewWriter()
 		w.AppendInt64(i.i)
 		if !reflect.DeepEqual(w.GetBytes(), i.b) {
 			t.Error()

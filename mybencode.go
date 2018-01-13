@@ -1,4 +1,4 @@
-package mybencode
+package Bencode
 
 import (
 	"strconv"
@@ -105,7 +105,7 @@ type Writer interface {
 	GetBytes() []byte
 }
 
-func NewWrier() Writer {
+func NewWriter() Writer {
 	var w writer
 	w.buf = make([]byte, 0)
 	return &w

@@ -185,23 +185,23 @@ func TestTorrent(t *testing.T) {
 	a, _, _ := decodeMap(data)
 
 	h := NewHandler(wrapMap{a})
-	if _, e := h.getByPos(0).toInt(); e == nil {
+	if _, e := h.GetByPos(0).ToInt64(); e == nil {
 		t.Error()
 	}
 
-	if v, _ := h.getByKey("announce").toString(); v != "http://torrent.ubuntu.com:6969/announce" {
+	if v, _ := h.GetByKey("announce").ToString(); v != "http://torrent.ubuntu.com:6969/announce" {
 		t.Errorf("announce not valid %s", v)
 	}
 
-	if v, _ := h.getByKey("announce-list").getByPos(0).getByPos(0).toString(); v != "http://torrent.ubuntu.com:6969/announce" {
+	if v, _ := h.GetByKey("announce-list").GetByPos(0).GetByPos(0).ToString(); v != "http://torrent.ubuntu.com:6969/announce" {
 		t.Errorf("announce-list 0 not valid %s", v)
 	}
 
-	if v, _ := h.getByKey("announce-list").getByPos(1).getByPos(0).toString(); v != "http://ipv6.torrent.ubuntu.com:6969/announce" {
+	if v, _ := h.GetByKey("announce-list").GetByPos(1).GetByPos(0).ToString(); v != "http://ipv6.torrent.ubuntu.com:6969/announce" {
 		t.Errorf("announce-list 1 not valid %s", v)
 	}
 
-	if v, _ := h.getByKey("info").getByKey("name").toString(); v != "ubuntu-16.04.3-desktop-amd64.iso" {
+	if v, _ := h.GetByKey("info").GetByKey("name").ToString(); v != "ubuntu-16.04.3-desktop-amd64.iso" {
 		t.Errorf("info->name not valid %s", v)
 	}
 
@@ -215,11 +215,11 @@ func TestHandler(t *testing.T) {
 	}
 
 	h := NewHandler(wrapMap{a})
-	if v, _ := h.getByKey("ab").toInt(); v != 32 {
+	if v, _ := h.GetByKey("ab").ToInt64(); v != 32 {
 		t.Error()
 	}
 
-	if _, e := h.getByPos(0).toInt(); e == nil {
+	if _, e := h.GetByPos(0).ToInt64(); e == nil {
 		t.Error()
 	}
 }

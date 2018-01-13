@@ -5,10 +5,10 @@ import (
 )
 
 type Handler interface {
-	getByPos(int) Handler
-	getByKey(string) Handler
-	toInt() (int64, error)
-	toString() (string, error)
+	GetByPos(int) Handler
+	GetByKey(string) Handler
+	ToInt64() (int64, error)
+	ToString() (string, error)
 }
 
 type handler struct {
@@ -20,7 +20,7 @@ func NewHandler(a Any) Handler {
 	return handler{a, nil}
 }
 
-func (h handler) getByPos(pos int) Handler {
+func (h handler) GetByPos(pos int) Handler {
 	if h.any == nil {
 		return handler{nil, h.err}
 	}
@@ -37,7 +37,7 @@ func (h handler) getByPos(pos int) Handler {
 	return handler{list[pos], nil}
 }
 
-func (h handler) getByKey(key string) Handler {
+func (h handler) GetByKey(key string) Handler {
 	if h.any == nil {
 		return handler{nil, h.err}
 	}
@@ -54,7 +54,7 @@ func (h handler) getByKey(key string) Handler {
 	return handler{nil, bencodeError{"key not found"}}
 }
 
-func (h handler) toInt() (int64, error) {
+func (h handler) ToInt64() (int64, error) {
 	if h.any == nil {
 		return 0, h.err
 	}
@@ -66,7 +66,7 @@ func (h handler) toInt() (int64, error) {
 	return h.any.ToInt(), nil
 }
 
-func (h handler) toString() (string, error) {
+func (h handler) ToString() (string, error) {
 	if h.any == nil {
 		return "", h.err
 	}

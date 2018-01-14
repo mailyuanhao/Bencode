@@ -1,4 +1,4 @@
-package Bencode
+package bencode
 
 import (
 	"strconv"

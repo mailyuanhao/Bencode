@@ -4,272 +4,144 @@ import (
 	"strconv"
 )
 
-type Handler interface {
-	GetByPos(int) Handler
-	GetByKey(string) Handler
-	ToInt64() (int64, error)
-	ToString() (string, error)
-	ToList() ([]Any, error)
-	ToMap() (map[string]Any, error)
-}
-
-type handler struct {
-	any Any
-	err error
-}
-
-//NewHandler make new Handler
-func NewHandler(a Any) Handler {
-	return handler{a, nil}
-}
-
-func (h handler) ToList() ([]Any, error) {
-	if h.any == nil {
-		return nil, &bencodeError{"Any is nil"}
-	}
-
-	if h.any.GetType() != ListValue {
-		return nil, &bencodeError{"Any is not list"}
-	}
-
-	return h.any.ToList(), nil
-}
-
-func (h handler) ToMap() (map[string]Any, error) {
-	if h.any == nil {
-		return nil, &bencodeError{"Any is nil"}
-	}
-
-	if h.any.GetType() != MapValue {
-		return nil, &bencodeError{"Any is not map"}
-	}
-
-	return h.any.ToMap(), nil
-}
-
-func (h handler) GetByPos(pos int) Handler {
-	if h.any == nil {
-		return handler{nil, h.err}
-	}
-
-	if h.any.GetType() != ListValue {
-		return handler{nil, &bencodeError{"Any is not list"}}
-	}
-
-	list := h.any.ToList()
-	if len(list) <= pos || pos < 0 {
-		return handler{nil, &bencodeError{"pos out of range"}}
-	}
-
-	return handler{list[pos], nil}
-}
-
-func (h handler) GetByKey(key string) Handler {
-	if h.any == nil {
-		return handler{nil, h.err}
-	}
-
-	if h.any.GetType() != MapValue {
-		return handler{nil, &bencodeError{"Any is not list"}}
-	}
-
-	dic := h.any.ToMap()
-	if v, ok := dic[key]; ok {
-		return handler{v, nil}
-	}
-
-	return handler{nil, &bencodeError{"key not found"}}
-}
-
-func (h handler) ToInt64() (int64, error) {
-	if h.any == nil {
-		return 0, h.err
-	}
-
-	if h.any.GetType() != IntValue {
-		return 0, &bencodeError{"Any is not int"}
-	}
-
-	return h.any.ToInt(), nil
-}
-
-func (h handler) ToString() (string, error) {
-	if h.any == nil {
-		return "", h.err
-	}
-
-	if h.any.GetType() != StringValue {
-		return "", &bencodeError{"Any is not string"}
-	}
-
-	return h.any.ToString(), nil
-}
-
+//ValueType bencode value type type
 type ValueType int
 
 const (
+	//IntValue int64
 	IntValue ValueType = iota
+	//StringValue string
 	StringValue
+	//ListValue list
 	ListValue
+	//MapValue Dictionary
 	MapValue
 )
 
+//Any interface used to store kinds of bencode types
 type Any interface {
 	GetType() ValueType
+	GetRaw() []byte
 	ToInt() int64
 	ToString() string
 	ToList() []Any
 	ToMap() map[string]Any
 }
 
-type Writer interface {
-	StartDic()
-	EndDic()
-	StartList()
-	EndList()
-	AppendInt64(int64)
-	AppendString(string)
-	GetBytes() []byte
-}
-
-func NewWriter() Writer {
-	var w writer
-	w.buf = make([]byte, 0)
-	return &w
-}
-
-type writer struct {
-	buf []byte
-}
-
-func (w *writer) GetBytes() []byte {
-	return w.buf
-}
-func (w *writer) StartDic() {
-	w.buf = append(w.buf, byte('d'))
-}
-
-func (w *writer) EndDic() {
-	w.buf = append(w.buf, byte('e'))
-}
-
-func (w *writer) StartList() {
-	w.buf = append(w.buf, byte('l'))
-}
-
-func (w *writer) EndList() {
-	w.buf = append(w.buf, byte('e'))
-}
-
-func (w *writer) AppendInt64(i int64) {
-	s := strconv.FormatInt(i, 10)
-	w.buf = append(w.buf, byte('i'))
-	w.buf = append(w.buf, s...)
-	w.buf = append(w.buf, byte('e'))
-}
-
-func (w *writer) AppendString(s string) {
-	strLen := len(s)
-	byteStrLen := []byte(strconv.Itoa(strLen))
-	w.buf = append(w.buf, byteStrLen...)
-	w.buf = append(w.buf, byte(':'))
-	w.buf = append(w.buf, []byte(s)...)
-}
-
 type wrapInt struct {
 	value int64
+	raw   []byte
 }
 
-func (v wrapInt) GetType() ValueType {
+func (v *wrapInt) GetType() ValueType {
 	return IntValue
 }
 
-func (v wrapInt) ToInt() int64 {
+func (v *wrapInt) ToInt() int64 {
 	return v.value
 }
 
-func (v wrapInt) ToString() string {
+func (v *wrapInt) ToString() string {
 	return ""
 }
 
-func (v wrapInt) ToList() []Any {
+func (v *wrapInt) ToList() []Any {
 	return nil
 }
 
-func (v wrapInt) ToMap() map[string]Any {
+func (v *wrapInt) ToMap() map[string]Any {
 	return nil
+}
+
+func (v *wrapInt) GetRaw() []byte {
+	return v.raw
 }
 
 type wrapString struct {
 	value string
+	raw   []byte
 }
 
-func (v wrapString) GetType() ValueType {
+func (v *wrapString) GetType() ValueType {
 	return StringValue
 }
 
-func (v wrapString) ToInt() int64 {
+func (v *wrapString) ToInt() int64 {
 	return 0
 }
 
-func (v wrapString) ToString() string {
+func (v *wrapString) ToString() string {
 	return v.value
 }
 
-func (v wrapString) ToList() []Any {
+func (v *wrapString) ToList() []Any {
 	return nil
 }
 
-func (v wrapString) ToMap() map[string]Any {
+func (v *wrapString) ToMap() map[string]Any {
 	return nil
+}
+
+func (v *wrapString) GetRaw() []byte {
+	return v.raw
 }
 
 type wrapList struct {
 	value []Any
+	raw   []byte
 }
 
-func (v wrapList) GetType() ValueType {
+func (v *wrapList) GetType() ValueType {
 	return ListValue
 }
 
-func (v wrapList) ToInt() int64 {
+func (v *wrapList) ToInt() int64 {
 	return 0
 }
 
-func (v wrapList) ToString() string {
+func (v *wrapList) ToString() string {
 	return ""
 }
 
-func (v wrapList) ToList() []Any {
+func (v *wrapList) ToList() []Any {
 	return v.value
 }
 
-func (v wrapList) ToMap() map[string]Any {
+func (v *wrapList) ToMap() map[string]Any {
 	return nil
+}
+
+func (v *wrapList) GetRaw() []byte {
+	return v.raw
 }
 
 type wrapMap struct {
 	value map[string]Any
+	raw   []byte
 }
 
-func (v wrapMap) GetType() ValueType {
+func (v *wrapMap) GetType() ValueType {
 	return MapValue
 }
 
-func (v wrapMap) ToInt() int64 {
+func (v *wrapMap) ToInt() int64 {
 	return 0
 }
 
-func (v wrapMap) ToString() string {
+func (v *wrapMap) ToString() string {
 	return ""
 }
 
-func (v wrapMap) ToList() []Any {
+func (v *wrapMap) ToList() []Any {
 	return nil
 }
 
-func (v wrapMap) ToMap() map[string]Any {
+func (v *wrapMap) ToMap() map[string]Any {
 	return v.value
+}
+
+func (v *wrapMap) GetRaw() []byte {
+	return v.raw
 }
 
 type bencodeError struct {
@@ -280,20 +152,33 @@ func (p *bencodeError) Error() string {
 	return p.info
 }
 
+//DecodeItem Decode funtion
 func DecodeItem(b []byte) (Any, int, error) {
 	switch {
 	case b[0] == byte('i'):
 		i, l, err := decodeInt(b)
-		return wrapInt{i}, l, err
+		if err != nil {
+			return nil, 0, err
+		}
+		return &wrapInt{i, b[0:l]}, l, err
 	case b[0] == byte('l'):
 		v, l, err := decodeList(b)
-		return wrapList{v}, l, err
+		if err != nil {
+			return nil, 0, err
+		}
+		return &wrapList{v, b[0:l]}, l, err
 	case b[0] == byte('d'):
 		v, l, err := decodeMap(b)
-		return wrapMap{v}, l, err
+		if err != nil {
+			return nil, 0, err
+		}
+		return &wrapMap{v, b[0:l]}, l, err
 	case b[0] >= byte('0') && b[0] <= byte('9'):
 		s, l, err := decodeString(b)
-		return wrapString{s}, l, err
+		if err != nil {
+			return nil, 0, err
+		}
+		return &wrapString{s, b[0:l]}, l, err
 	}
 
 	return nil, 0, &bencodeError{""}
@@ -382,4 +267,170 @@ func decodeInt(b []byte) (int64, int, error) {
 		}
 	}
 	return 0, 0, &bencodeError{"unexpected value "}
+}
+
+//Handler read values helper
+type Handler interface {
+	GetByPos(int) Handler
+	GetByKey(string) Handler
+	ToInt64() (int64, error)
+	ToString() (string, error)
+	ToList() ([]Any, error)
+	ToMap() (map[string]Any, error)
+	GetRaw() ([]byte, error)
+}
+
+type handler struct {
+	any Any
+	err error
+}
+
+//NewHandler make new Handler
+func NewHandler(a Any) Handler {
+	return handler{a, nil}
+}
+
+func (h handler) GetRaw() ([]byte, error) {
+	if h.any == nil {
+		return nil, &bencodeError{"Any is nil"}
+	}
+	return h.any.GetRaw(), nil
+}
+
+func (h handler) ToList() ([]Any, error) {
+	if h.any == nil {
+		return nil, &bencodeError{"Any is nil"}
+	}
+
+	if h.any.GetType() != ListValue {
+		return nil, &bencodeError{"Any is not list"}
+	}
+
+	return h.any.ToList(), nil
+}
+
+func (h handler) ToMap() (map[string]Any, error) {
+	if h.any == nil {
+		return nil, &bencodeError{"Any is nil"}
+	}
+
+	if h.any.GetType() != MapValue {
+		return nil, &bencodeError{"Any is not map"}
+	}
+
+	return h.any.ToMap(), nil
+}
+
+func (h handler) GetByPos(pos int) Handler {
+	if h.any == nil {
+		return handler{nil, h.err}
+	}
+
+	if h.any.GetType() != ListValue {
+		return handler{nil, &bencodeError{"Any is not list"}}
+	}
+
+	list := h.any.ToList()
+	if len(list) <= pos || pos < 0 {
+		return handler{nil, &bencodeError{"pos out of range"}}
+	}
+
+	return handler{list[pos], nil}
+}
+
+func (h handler) GetByKey(key string) Handler {
+	if h.any == nil {
+		return handler{nil, h.err}
+	}
+
+	if h.any.GetType() != MapValue {
+		return handler{nil, &bencodeError{"Any is not list"}}
+	}
+
+	dic := h.any.ToMap()
+	if v, ok := dic[key]; ok {
+		return handler{v, nil}
+	}
+
+	return handler{nil, &bencodeError{"key not found"}}
+}
+
+func (h handler) ToInt64() (int64, error) {
+	if h.any == nil {
+		return 0, h.err
+	}
+
+	if h.any.GetType() != IntValue {
+		return 0, &bencodeError{"Any is not int"}
+	}
+
+	return h.any.ToInt(), nil
+}
+
+func (h handler) ToString() (string, error) {
+	if h.any == nil {
+		return "", h.err
+	}
+
+	if h.any.GetType() != StringValue {
+		return "", &bencodeError{"Any is not string"}
+	}
+
+	return h.any.ToString(), nil
+}
+
+//Writer interface used to bencode values
+type Writer interface {
+	StartDic()
+	EndDic()
+	StartList()
+	EndList()
+	AppendInt64(int64)
+	AppendString(string)
+	GetBytes() []byte
+}
+
+//NewWriter Constructor of writer
+func NewWriter() Writer {
+	var w writer
+	w.buf = make([]byte, 0)
+	return &w
+}
+
+type writer struct {
+	buf []byte
+}
+
+func (w *writer) GetBytes() []byte {
+	return w.buf
+}
+func (w *writer) StartDic() {
+	w.buf = append(w.buf, byte('d'))
+}
+
+func (w *writer) EndDic() {
+	w.buf = append(w.buf, byte('e'))
+}
+
+func (w *writer) StartList() {
+	w.buf = append(w.buf, byte('l'))
+}
+
+func (w *writer) EndList() {
+	w.buf = append(w.buf, byte('e'))
+}
+
+func (w *writer) AppendInt64(i int64) {
+	s := strconv.FormatInt(i, 10)
+	w.buf = append(w.buf, byte('i'))
+	w.buf = append(w.buf, s...)
+	w.buf = append(w.buf, byte('e'))
+}
+
+func (w *writer) AppendString(s string) {
+	strLen := len(s)
+	byteStrLen := []byte(strconv.Itoa(strLen))
+	w.buf = append(w.buf, byteStrLen...)
+	w.buf = append(w.buf, byte(':'))
+	w.buf = append(w.buf, []byte(s)...)
 }

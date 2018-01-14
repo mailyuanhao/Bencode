@@ -8,10 +8,17 @@ import (
 
 func TestDecodeMap(e *testing.T) {
 	{
-		a, l, _ := decodeMap([]byte("d2:abi32ee"))
-		k, ok := a["ab"]
+		a, l, _ := DecodeItem([]byte("d2:abi32ee"))
+		if a.GetType() != MapValue {
+			e.Error("a must a dictionary")
+		}
+		k, ok := a.ToMap()["ab"]
 		if !ok || k.GetType() != IntValue || k.ToInt() != 32 || l != 10 {
 			e.Error()
+		}
+		raw := []byte("i32e")
+		if !reflect.DeepEqual(k.GetRaw(), raw) {
+			e.Errorf("k.raw invalid %+v", k.GetRaw())
 		}
 	}
 }
@@ -43,9 +50,13 @@ func TestDecodeString(e *testing.T) {
 	}
 
 	for _, t := range tables {
-		value, len, err := decodeString(t.x)
-		if value != t.i || t.l != len || err != nil {
+		value, len, err := DecodeItem(t.x)
+		values := value.ToString()
+		if values != t.i || t.l != len || err != nil {
 			e.Errorf("error: %s, %d, %s, %d", t.i, t.l, value, len)
+		}
+		if !reflect.DeepEqual(t.x, value.GetRaw()) {
+			e.Errorf("raw not equal, required: %+v, got %+v", t.x, value.GetRaw())
 		}
 	}
 }
@@ -74,9 +85,9 @@ func TestDecodeInt(e *testing.T) {
 
 func TestAny(t *testing.T) {
 	const cint int64 = 32
-	i := wrapInt{cint}
+	i := wrapInt{cint, []byte("i32e")}
 	var a Any
-	a = i
+	a = &i
 	if a.GetType() != IntValue {
 		t.Errorf("a.GetType != IntValue")
 	}
@@ -84,9 +95,9 @@ func TestAny(t *testing.T) {
 		t.Errorf("a.ToInt not equal to cint")
 	}
 
-	s := wrapString{"abcdefg"}
+	s := wrapString{"abcdefg", []byte("7:abcdefg")}
 	var b Any
-	b = s
+	b = &s
 	if b.GetType() != StringValue {
 		t.Errorf("b.GetType != IntValue")
 	}
@@ -107,7 +118,7 @@ func TestAny(t *testing.T) {
 		t.Error()
 	}
 
-	var e Any = c
+	var e Any = &c
 	if e.GetType() != ListValue {
 		t.Error()
 	}
@@ -182,9 +193,9 @@ func TestTorrent(t *testing.T) {
 		t.Errorf("FILE READ ERROR %s", err.Error())
 	}
 
-	a, _, _ := decodeMap(data)
+	a, _, _ := DecodeItem(data)
 
-	h := NewHandler(wrapMap{a})
+	h := NewHandler(&wrapMap{a.ToMap(), nil})
 	if _, e := h.GetByPos(0).ToInt64(); e == nil {
 		t.Error()
 	}
@@ -214,8 +225,12 @@ func TestHandler(t *testing.T) {
 		t.Error()
 	}
 
-	h := NewHandler(wrapMap{a})
+	h := NewHandler(&wrapMap{a, nil})
 	if v, _ := h.GetByKey("ab").ToInt64(); v != 32 {
+		t.Error()
+	}
+
+	if v, _ := h.GetByKey("ab").GetRaw(); !reflect.DeepEqual(v, []byte("i32e")) {
 		t.Error()
 	}
 
